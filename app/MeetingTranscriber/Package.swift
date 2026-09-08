@@ -11,6 +11,7 @@ let package = Package(
         .package(url: "https://github.com/argmaxinc/WhisperKit.git", from: "1.0.0"),
         .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.13.4"),
         .package(path: "../../tools/audiotap"),
+        .package(url: "https://github.com/k2-fsa/sherpa-onnx.git", from: "1.13.7"),
     ],
     targets: [
         // LocalVQE echo-cancellation library (C API over a static xcframework).
@@ -46,6 +47,7 @@ let package = Package(
                 .product(name: "WhisperKit", package: "WhisperKit"),
                 .product(name: "FluidAudio", package: "FluidAudio"),
                 .product(name: "AudioTapLib", package: "audiotap"),
+                .product(name: "sherpa-onnx", package: "sherpa-onnx"),
                 "CLocalVQE",
             ],
             path: "Sources",
