@@ -17,7 +17,9 @@ final class GigaAMChunkingTests: XCTestCase {
         let notch = Int(GigaAMChunking.quietWindowSeconds * Double(rate))
         for start in silentAt {
             let from = Int(start * Double(rate))
-            for index in from ..< min(from + notch, samples.count) { samples[index] = 0 }
+            for index in from ..< min(from + notch, samples.count) {
+                samples[index] = 0
+            }
         }
         return samples
     }
@@ -67,7 +69,10 @@ final class GigaAMChunkingTests: XCTestCase {
         let samples = audio(seconds: 40, silentAt: [17])
         let chunks = GigaAMChunking.chunks(samples: samples, sampleRate: rate)
 
-        guard let firstCut = chunks.first?.upperBound else { return XCTFail("expected a cut") }
+        guard let firstCut = chunks.first?.upperBound else {
+            XCTFail("expected a cut")
+            return
+        }
         let notchCentre = (17 + GigaAMChunking.quietWindowSeconds / 2) * Double(rate)
         XCTAssertEqual(
             Double(firstCut), notchCentre,

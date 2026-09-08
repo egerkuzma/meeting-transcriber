@@ -238,6 +238,7 @@
                 "transcription.engine", "transcription.whisperKitModel",
                 "transcription.whisperLanguage", "transcription.parakeetLanguage",
                 "transcription.customVocabularyPath",
+                "transcription.whisperCppModelPath", "transcription.whisperCppLanguage",
                 "diarization.diarize", "diarization.mode", "diarization.numSpeakers",
                 "diarization.vadEnabled", "diarization.vadThreshold",
                 "diarization.clusterThreshold", "diarization.warmStartFa",

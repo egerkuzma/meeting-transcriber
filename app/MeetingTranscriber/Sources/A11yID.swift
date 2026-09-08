@@ -53,6 +53,7 @@ enum A11yID {
     /// `/state`, which is what makes it a usable text-entry probe.
     static let micNameField = "micNameField"
     static let customVocabularyPathField = "customVocabularyPathField"
+    static let customVocabularyRow = "customVocabularyRow"
     static let whisperCppModelPathField = "whisperCppModelPathField"
     static let whisperKitVocabularyPromptToggle = "whisperKitVocabularyPromptToggle"
     static let terminologyRulesEditor = "terminologyRulesEditor"

@@ -108,15 +108,11 @@ final class WhisperCppEngine: TranscribingEngine {
         transcriptionProgress = 0
         defer { transcriptionProgress = 1.0 }
 
-        let segments = try await context.transcribe(
-            samples: audio,
-            language: language,
-            progress: { fraction in
-                Task { @MainActor [weak self] in self?.transcriptionProgress = fraction }
-            },
-        )
-        return segments.map {
-            TimestampedSegment(start: $0.start, end: $0.end, text: $0.text)
+        let segments = try await context.transcribe(samples: audio, language: language) { fraction in
+            Task { @MainActor [weak self] in self?.transcriptionProgress = fraction }
+        }
+        return segments.map { segment in
+            TimestampedSegment(start: segment.start, end: segment.end, text: segment.text)
         }
     }
 }

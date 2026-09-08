@@ -31,7 +31,8 @@ final class WhisperCppModelFileTests: XCTestCase {
         let path = directory.appendingPathComponent("absent.bin").path
 
         guard case let .missing(message) = WhisperCppModelFile.resolve(path: path) else {
-            return XCTFail("expected .missing")
+            XCTFail("expected .missing")
+            return
         }
         XCTAssertTrue(
             message.contains(path),
@@ -43,14 +44,16 @@ final class WhisperCppModelFileTests: XCTestCase {
     /// resolve as ready and fail much later, inside whisper.cpp.
     func testDirectoryIsNotAModel() {
         guard case let .missing(message) = WhisperCppModelFile.resolve(path: directory.path) else {
-            return XCTFail("expected .missing")
+            XCTFail("expected .missing")
+            return
         }
         XCTAssertTrue(message.contains(directory.path))
     }
 
     func testEmptyPathAsksTheUserToChooseOne() {
         guard case let .missing(message) = WhisperCppModelFile.resolve(path: "   ") else {
-            return XCTFail("expected .missing")
+            XCTFail("expected .missing")
+            return
         }
         XCTAssertTrue(message.contains("Settings"), "An unset path should point at where to set it: \(message)")
     }
