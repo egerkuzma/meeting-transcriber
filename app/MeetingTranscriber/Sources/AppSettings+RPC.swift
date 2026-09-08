@@ -59,6 +59,8 @@
                 whisperKitModel: whisperKitModel,
                 whisperLanguage: whisperLanguage,
                 parakeetLanguage: parakeetLanguage,
+                whisperCppModelPath: whisperCppModelPath,
+                whisperCppLanguage: whisperCppLanguage,
                 customVocabularyPath: customVocabularyPath,
             )
         }

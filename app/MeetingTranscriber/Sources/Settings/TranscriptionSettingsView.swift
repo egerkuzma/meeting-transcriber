@@ -7,6 +7,7 @@ struct TranscriptionSettingsView: View {
     var whisperKitEngine: WhisperKitEngine
     var parakeetEngine: ParakeetEngine
     var gigaamEngine: GigaAMEngine
+    var whisperCppEngine: WhisperCppEngine
 
     /// Set when the user flips live captions on while a first-use Nemotron model
     /// download is pending — defers the actual enable to the consent alert.
@@ -59,6 +60,10 @@ struct TranscriptionSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if settings.transcriptionEngine == .whisperCpp {
+                    whisperCppOptions
                 }
 
                 HStack {
@@ -124,6 +129,40 @@ struct TranscriptionSettingsView: View {
             liveTranscriptionSection
         }
         .formStyle(.grouped)
+    }
+
+    /// The model path is a free-form setting, not a picker over a known list:
+    /// the engine exists to run whatever ggml fine-tune the user installed.
+    /// Hoisted out of `body` for the same type-check-budget reason as the live
+    /// section below.
+    @ViewBuilder
+    private var whisperCppOptions: some View { // swiftlint:disable:this attributes
+        HStack {
+            TextField("Model file (ggml .bin)", text: $settings.whisperCppModelPath)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier(A11yID.whisperCppModelPathField)
+            Button("Choose\u{2026}") {
+                let panel = NSOpenPanel()
+                panel.allowsMultipleSelection = false
+                panel.canChooseDirectories = false
+                if panel.runModal() == .OK, let url = panel.url {
+                    settings.whisperCppModelPath = url.path
+                }
+            }
+        }
+        .help("A ggml-format Whisper model, e.g. a fine-tune converted with whisper.cpp's convert script.")
+
+        Picker("Language", selection: $settings.whisperCppLanguage) {
+            Text("Auto-detect").tag("")
+            ForEach(PickerLanguages.whisperKit, id: \.code) { lang in
+                Text(lang.label).tag(lang.code)
+            }
+        }
+
+        Text(Self.whisperCppNote)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Hoisted out of `body` into a named property so the section's nesting
@@ -201,6 +240,9 @@ struct TranscriptionSettingsView: View {
         case .gigaam:
             "GigaAM does not use the custom vocabulary file. The file stays configured for the other engines."
 
+        case .whisperCpp:
+            "Whisper.cpp does not use the custom vocabulary file. The file stays configured for the other engines."
+
         case .whisperKit:
             "Text file with one term per line. Enable the experimental custom vocabulary prompt to pass a "
                 + "soft 32-token decoder hint to WhisperKit; it is not a guaranteed correction. "
@@ -215,6 +257,14 @@ struct TranscriptionSettingsView: View {
     static let gigaamNote = "Russian only. The model is not downloaded by the app — "
         + "place the GigaAM-v3 e2e-RNNT ONNX files in "
         + "\(AppPaths.gigaamModelDir.path). Live captions do not use this engine."
+
+    /// Says the two things the fields above do not: the app never downloads
+    /// this model, and the language has to match whatever the user installed
+    /// (a monolingual fine-tune given the wrong code produces confident
+    /// nonsense rather than an error).
+    static let whisperCppNote = "The app does not download this model — point the field at a ggml .bin yourself. "
+        + "Set the language to match the model; a fine-tune given the wrong language does not fail, it mistranscribes. "
+        + "Live captions do not use this engine."
 
     static let whisperKitVocabularyPromptHelpText = "Experimental. WhisperKit treats the vocabulary as a decoder hint, "
         + "not a correction. In a dense four-speaker English evaluation, a 25-content-token prompt "
@@ -275,6 +325,7 @@ struct TranscriptionSettingsView: View {
         switch settings.transcriptionEngine {
         case .parakeet: parakeetEngine
         case .gigaam: gigaamEngine
+        case .whisperCpp: whisperCppEngine
         case .whisperKit: whisperKitEngine
         }
     }

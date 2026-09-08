@@ -398,6 +398,12 @@
                     modelState: engines.gigaamEngine.modelState.wireName,
                     failureMessage: engines.gigaamEngine.modelState.failureMessage,
                 ),
+                whisperCpp: .init(
+                    modelPath: engines.whisperCppEngine.modelPath,
+                    language: settings.whisperCppLanguageOrNil,
+                    modelState: engines.whisperCppEngine.modelState.wireName,
+                    failureMessage: engines.whisperCppEngine.modelState.failureMessage,
+                ),
             )
         }
 

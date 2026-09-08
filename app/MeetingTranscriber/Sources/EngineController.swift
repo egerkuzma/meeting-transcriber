@@ -4,7 +4,7 @@ import Observation
 // MARK: - EngineController
 
 /// Owns the transcription-engine concern: the engine instances
-/// (`WhisperKitEngine`, `ParakeetEngine`, `GigaAMEngine`),
+/// (`WhisperKitEngine`, `ParakeetEngine`, `GigaAMEngine`, `WhisperCppEngine`),
 /// the active-engine selection, and keeping each engine's model / language /
 /// vocabulary in line with `AppSettings` (both an up-front sync at construction
 /// and a self-rearming reactive observer for runtime changes).
@@ -27,6 +27,7 @@ final class EngineController {
     let whisperKit: WhisperKitEngine
     let parakeetEngine: ParakeetEngine
     let gigaamEngine: GigaAMEngine
+    let whisperCppEngine: WhisperCppEngine
 
     private let settings: AppSettings
 
@@ -53,12 +54,17 @@ final class EngineController {
         GigaAMEngine()
     }
 
+    private static func makeWhisperCpp() -> WhisperCppEngine {
+        WhisperCppEngine()
+    }
+
     init(settings: AppSettings, warmupQueue: ModelWarmupQueue = ModelWarmupQueue()) {
         self.settings = settings
         self.warmupQueue = warmupQueue
         self.whisperKit = Self.makeWhisperKit()
         self.parakeetEngine = Self.makeParakeet()
         self.gigaamEngine = Self.makeGigaAM()
+        self.whisperCppEngine = Self.makeWhisperCpp()
 
         // Bring engines in line with the current settings up front so the first
         // transcription doesn't run against stale defaults, then start observing
@@ -75,6 +81,9 @@ final class EngineController {
 
         case .gigaam:
             gigaamEngine
+
+        case .whisperCpp:
+            whisperCppEngine
 
         case .whisperKit:
             whisperKit
@@ -129,6 +138,12 @@ final class EngineController {
             // future settings-backed knob has an obvious home rather than being
             // swallowed by a `default`.
             break
+
+        case .whisperCpp:
+            let nextPath = settings.whisperCppModelPath
+            if whisperCppEngine.modelPath != nextPath { whisperCppEngine.modelPath = nextPath }
+            let nextLang = settings.whisperCppLanguage
+            if whisperCppEngine.language != nextLang { whisperCppEngine.language = nextLang }
         }
     }
 
@@ -144,6 +159,8 @@ final class EngineController {
             _ = settings.customVocabularyBookmark
             _ = settings.whisperKitVocabularyPromptEnabled
             _ = settings.parakeetLanguage
+            _ = settings.whisperCppModelPath
+            _ = settings.whisperCppLanguage
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }

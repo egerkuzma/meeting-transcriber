@@ -90,10 +90,11 @@ import json, sys
 d = json.load(sys.stdin)
 assert 'pipeline' in d and 'speakerDB' in d
 e = d['engines']
-assert e['active'] in ('whisperKit', 'parakeet', 'gigaam'), f'bad active: {e[\"active\"]!r}'
+assert e['active'] in ('whisperKit', 'parakeet', 'gigaam', 'whisperCpp'), f'bad active: {e[\"active\"]!r}'
 assert 'modelVariant' in e['whisperKit']
 assert 'customVocabularyPath' in e['parakeet']
 assert 'modelState' in e['gigaam']
+assert 'modelPath' in e['whisperCpp']
 " || fail "state JSON malformed"
 ok "state JSON parses (incl. engines block)"
 
