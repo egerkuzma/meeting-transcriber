@@ -82,6 +82,7 @@ struct TranscriptionSettingsView: View {
                         }
                     }
                 }
+                .accessibilityIdentifier(A11yID.customVocabularyRow)
                 .help(Self.vocabularyHelpText(for: settings.transcriptionEngine))
 
                 Text(settings.customVocabularyValidation.message)

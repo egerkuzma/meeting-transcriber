@@ -45,8 +45,8 @@ enum GigaAMModelFiles {
         }
 
         let names = [encoderName, decoderName, joinerName, tokensName]
-        let absent = names.filter {
-            !fileManager.fileExists(atPath: directory.appendingPathComponent($0).path)
+        let absent = names.filter { name in
+            !fileManager.fileExists(atPath: directory.appendingPathComponent(name).path)
         }
         guard absent.isEmpty else {
             return .missing(
