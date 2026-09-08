@@ -16,20 +16,22 @@ enum TranscriptionEngineSetting: String, CaseIterable, Codable {
     // swiftlint:disable:next raw_value_for_camel_cased_codable_enum
     case whisperKit
     case parakeet
+    case gigaam
 
     var label: String {
         switch self {
         case .whisperKit: "WhisperKit (Whisper)"
         case .parakeet: "Parakeet TDT v3 (NVIDIA)"
+        case .gigaam: "GigaAM v3 (Sber, Russian only)"
         }
     }
 
-    /// Whether this engine is available on the current platform. Both current
+    /// Whether this engine is available on the current platform. All current
     /// engines run everywhere the app does; kept as a capability hook for
     /// engines with stricter OS floors.
     var isAvailable: Bool {
         switch self {
-        case .whisperKit, .parakeet: true
+        case .whisperKit, .parakeet, .gigaam: true
         }
     }
 
@@ -39,12 +41,16 @@ enum TranscriptionEngineSetting: String, CaseIterable, Codable {
     }
 
     /// Whether the engine implements `transcribeSamples([Float])` so the
-    /// live-transcription pipeline can feed it VAD-bounded windows. Both current
-    /// engines do; kept as an exhaustive `switch` (not a stored `true`) so a
-    /// future non-streaming engine is forced to declare its support here.
+    /// live-transcription pipeline can feed it VAD-bounded windows.
+    ///
+    /// GigaAM decodes a whole utterance per pass and carries no state between
+    /// calls, so it has no streaming-friendly hook — but captions are not lost
+    /// with it selected: it reports Russian, and a set language routes captions
+    /// to the engine-independent Nemotron streaming session.
     var supportsLiveTranscription: Bool {
         switch self {
         case .whisperKit, .parakeet: true
+        case .gigaam: false
         }
     }
 }

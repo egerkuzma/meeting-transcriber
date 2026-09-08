@@ -388,11 +388,15 @@
                 whisperKit: .init(
                     modelVariant: engines.whisperKit.modelVariant,
                     language: engines.whisperKit.language,
-                    modelState: String(describing: engines.whisperKit.modelState).lowercased(),
+                    modelState: engines.whisperKit.modelState.wireName,
                 ),
                 parakeet: .init(
                     customVocabularyPath: engines.parakeetEngine.customVocabularyPath,
-                    modelState: String(describing: engines.parakeetEngine.modelState).lowercased(),
+                    modelState: engines.parakeetEngine.modelState.wireName,
+                ),
+                gigaam: .init(
+                    modelState: engines.gigaamEngine.modelState.wireName,
+                    failureMessage: engines.gigaamEngine.modelState.failureMessage,
                 ),
             )
         }
