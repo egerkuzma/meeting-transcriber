@@ -88,6 +88,13 @@ fi
 
 cp "$SPM_DIR/.build/release/MeetingTranscriber" "$MACOS_DIR/MeetingTranscriber"
 
+# whisper.cpp ships a dynamic framework the executable links against; without it
+# in the bundle dyld refuses to launch the app. Fatal, like the LocalVQE model
+# and for a stronger reason: this is not a degraded feature, it is no app.
+# shellcheck source=lib/whisper-framework.sh
+source "$SCRIPT_DIR/lib/whisper-framework.sh"
+install_whisper_framework "$APP_BUNDLE" "$SPM_DIR" release
+
 # ── Step 2: Assemble app bundle ──────────────────────────────────────────────
 
 echo ""
@@ -171,6 +178,17 @@ if [ "$NOTARIZE" = true ]; then
         while IFS= read -r -d '' lib; do
             codesign --force --sign "$DEVELOPER_ID" --options runtime --timestamp "$lib"
         done
+
+    # Nested frameworks are signed as bundles, not as loose binaries, so the
+    # find above cannot reach whisper.framework: its Mach-O is named `whisper`
+    # and matches neither pattern. Signing the framework bundle itself is what
+    # notarization requires -- an unsigned nested bundle fails the submission,
+    # and `--deep` on the app is documented as unsuitable for signing nested
+    # code for distribution.
+    if [ -d "$APP_BUNDLE/Contents/Frameworks/whisper.framework" ]; then
+        codesign --force --sign "$DEVELOPER_ID" --options runtime --timestamp \
+            "$APP_BUNDLE/Contents/Frameworks/whisper.framework"
+    fi
 
     # Embed the provisioning profile (when available) and derive the
     # entitlements it authorises — see scripts/lib/signing.sh for why the

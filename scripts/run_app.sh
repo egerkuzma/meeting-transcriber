@@ -75,6 +75,14 @@ GIT_HASH=$(git -C "$TRANSCRIBER_ROOT" rev-parse --short HEAD 2>/dev/null || echo
 
 cp "$BUILD_BINARY" "$APP_BINARY"
 
+# whisper.cpp ships a dynamic framework, so the bundle needs it alongside the
+# executable or dyld refuses to launch. Fatal here, unlike the LocalVQE model
+# below: that one degrades to a feature that finds no model, this one is the
+# difference between an app that starts and one that does not.
+# shellcheck source=lib/whisper-framework.sh
+source "$SCRIPT_DIR/lib/whisper-framework.sh"
+install_whisper_framework "$APP_BUNDLE" "$SPM_DIR" release
+
 # Licences for the third-party code and weights this bundle redistributes. The
 # dev app is not distributed, but scripts/e2e-app.sh deploys it, so keeping it
 # identical to a release bundle is what makes an e2e run evidence about the
