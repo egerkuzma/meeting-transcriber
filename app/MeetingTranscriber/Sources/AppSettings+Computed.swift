@@ -24,6 +24,9 @@ extension AppSettings {
         switch transcriptionEngine {
         case .whisperKit: whisperLanguageOrNil
         case .parakeet: parakeetLanguageOrNil
+        // GigaAM is a Russian-only model with no language parameter, so there is
+        // nothing for the user to choose and nothing to auto-detect.
+        case .gigaam: "ru"
         }
     }
 

@@ -139,6 +139,7 @@ final class TranscriptionSettingsVocabularyTests: XCTestCase {
             settings: settings,
             whisperKitEngine: WhisperKitEngine(),
             parakeetEngine: ParakeetEngine(),
+            gigaamEngine: GigaAMEngine(),
         )
     }
 }

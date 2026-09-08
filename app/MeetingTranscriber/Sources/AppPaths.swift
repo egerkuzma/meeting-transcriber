@@ -40,6 +40,14 @@ enum AppPaths {
         return downloads.appendingPathComponent("MeetingTranscriber")
     }()
 
+    /// Hand-installed ASR models that the app does not download itself.
+    static let modelsDir = dataDir.appendingPathComponent("models")
+
+    /// GigaAM-v3 e2e-RNNT ONNX artefacts. There is no download step — the user
+    /// places the files here — so this path is quoted verbatim in the
+    /// engine's "model missing" message.
+    static let gigaamModelDir = modelsDir.appendingPathComponent("gigaam-v3")
+
     /// Speaker voice profiles DB.
     static let speakersDB = dataDir.appendingPathComponent("speakers.json")
 

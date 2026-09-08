@@ -80,16 +80,34 @@
             // tracks jobs, not model preloads.
             XCTAssertEqual(snapshot.engines.whisperKit.modelState, "unloaded")
             XCTAssertEqual(snapshot.engines.parakeet.modelState, "unloaded")
+            XCTAssertEqual(snapshot.engines.gigaam.modelState, "unloaded")
+            XCTAssertNil(snapshot.engines.gigaam.failureMessage)
+        }
+
+        func test_snapshot_reflectsActiveEngine_gigaam() {
+            settings.transcriptionEngine = .gigaam
+            let state = AppState(settings: settings)
+
+            XCTAssertEqual(state.rpcStateSnapshot().engines.active, .gigaam)
         }
 
         func test_modelStateWireFormat_pinsDescriptionContract() {
             // e2e-cpu-load.sh string-matches `.modelState == "loaded"` to know
             // when model preload is done. The wire value is
-            // `String(describing: EngineModelState).lowercased()` — pin that mapping
-            // here so a WhisperKit upgrade changing the enum's description
-            // breaks THIS test, not silently the e2e runner's settle gate.
-            XCTAssertEqual(String(describing: EngineModelState.loaded).lowercased(), "loaded")
-            XCTAssertEqual(String(describing: EngineModelState.unloaded).lowercased(), "unloaded")
+            // `EngineModelState.wireName` — pin the whole mapping here so a
+            // renamed case breaks THIS test, not silently the e2e runner's
+            // settle gate. `failed` carries a message that must NOT reach the
+            // wire value, which is the reason `wireName` exists at all.
+            XCTAssertEqual(EngineModelState.loaded.wireName, "loaded")
+            XCTAssertEqual(EngineModelState.unloaded.wireName, "unloaded")
+            XCTAssertEqual(EngineModelState.downloading.wireName, "downloading")
+            XCTAssertEqual(EngineModelState.loading.wireName, "loading")
+            XCTAssertEqual(EngineModelState.failed("/some/path is missing").wireName, "failed")
+            XCTAssertEqual(
+                EngineModelState.failed("/some/path is missing").failureMessage,
+                "/some/path is missing",
+            )
+            XCTAssertNil(EngineModelState.loaded.failureMessage)
         }
 
         func test_snapshot_whisperLanguageNil_surfacesAsNil() {

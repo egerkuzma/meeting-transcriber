@@ -6,6 +6,7 @@ struct TranscriptionSettingsView: View {
     @Bindable var settings: AppSettings
     var whisperKitEngine: WhisperKitEngine
     var parakeetEngine: ParakeetEngine
+    var gigaamEngine: GigaAMEngine
 
     /// Set when the user flips live captions on while a first-use Nemotron model
     /// download is pending — defers the actual enable to the consent alert.
@@ -51,6 +52,13 @@ struct TranscriptionSettingsView: View {
                             Text(lang.label).tag(lang.code)
                         }
                     }
+                }
+
+                if settings.transcriptionEngine == .gigaam {
+                    Text(Self.gigaamNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack {
@@ -190,6 +198,9 @@ struct TranscriptionSettingsView: View {
             "Text file with one term per line. Parakeet uses CTC rescoring for saved transcription. "
                 + "Live captions do not use CTC vocabulary rescoring."
 
+        case .gigaam:
+            "GigaAM does not use the custom vocabulary file. The file stays configured for the other engines."
+
         case .whisperKit:
             "Text file with one term per line. Enable the experimental custom vocabulary prompt to pass a "
                 + "soft 32-token decoder hint to WhisperKit; it is not a guaranteed correction. "
@@ -197,6 +208,13 @@ struct TranscriptionSettingsView: View {
                 + "WhisperKit; language-specific live backends do not use it."
         }
     }
+
+    /// Stated in the Settings pane because nothing else in the UI reveals it:
+    /// GigaAM has no language picker, and a user who selects it for a German
+    /// meeting would otherwise only find out from the transcript.
+    static let gigaamNote = "Russian only. The model is not downloaded by the app — "
+        + "place the GigaAM-v3 e2e-RNNT ONNX files in "
+        + "\(AppPaths.gigaamModelDir.path). Live captions do not use this engine."
 
     static let whisperKitVocabularyPromptHelpText = "Experimental. WhisperKit treats the vocabulary as a decoder hint, "
         + "not a correction. In a dense four-speaker English evaluation, a 25-content-token prompt "
@@ -234,10 +252,12 @@ struct TranscriptionSettingsView: View {
     }
 
     private var liveTranscriptionFootnote: String {
-        // Both current engines support the re-transcribe caption path, so
-        // captions are always available; this just explains the overlay. If a
-        // future engine returns `supportsLiveTranscription == false`, reintroduce
-        // a conditional "unsupported" message gated on that + `englishStreaming`.
+        // Captions are available with every engine, so this only explains the
+        // overlay. WhisperKit and Parakeet reach them through the re-transcribe
+        // path; GigaAM has no such hook but reports a set language (Russian),
+        // which routes captions to the engine-independent Nemotron streaming
+        // session. An engine that had neither would need a conditional
+        // "unsupported" message here.
         "Live transcription runs during recording whether or not the overlay "
             + "is visible. With \"Show caption overlay\" on, captions appear in a "
             + "click-through bar at the bottom of the screen; turn it off to hide "
@@ -254,6 +274,7 @@ struct TranscriptionSettingsView: View {
     private var activeEngine: any TranscribingEngine {
         switch settings.transcriptionEngine {
         case .parakeet: parakeetEngine
+        case .gigaam: gigaamEngine
         case .whisperKit: whisperKitEngine
         }
     }
@@ -281,6 +302,13 @@ struct TranscriptionSettingsView: View {
             Label("Model ready", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .font(.caption)
+
+        case let .failed(message):
+            Label(message, systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Retry") { Task { await engine.loadModel() } }
 
         case .unloaded:
             Button("Load Model") {

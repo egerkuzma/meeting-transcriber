@@ -4,7 +4,7 @@ import Observation
 // MARK: - EngineController
 
 /// Owns the transcription-engine concern: the engine instances
-/// (`WhisperKitEngine`, `ParakeetEngine`),
+/// (`WhisperKitEngine`, `ParakeetEngine`, `GigaAMEngine`),
 /// the active-engine selection, and keeping each engine's model / language /
 /// vocabulary in line with `AppSettings` (both an up-front sync at construction
 /// and a self-rearming reactive observer for runtime changes).
@@ -26,6 +26,7 @@ import Observation
 final class EngineController {
     let whisperKit: WhisperKitEngine
     let parakeetEngine: ParakeetEngine
+    let gigaamEngine: GigaAMEngine
 
     private let settings: AppSettings
 
@@ -48,11 +49,16 @@ final class EngineController {
         ParakeetEngine()
     }
 
+    private static func makeGigaAM() -> GigaAMEngine {
+        GigaAMEngine()
+    }
+
     init(settings: AppSettings, warmupQueue: ModelWarmupQueue = ModelWarmupQueue()) {
         self.settings = settings
         self.warmupQueue = warmupQueue
         self.whisperKit = Self.makeWhisperKit()
         self.parakeetEngine = Self.makeParakeet()
+        self.gigaamEngine = Self.makeGigaAM()
 
         // Bring engines in line with the current settings up front so the first
         // transcription doesn't run against stale defaults, then start observing
@@ -66,6 +72,9 @@ final class EngineController {
         switch settings.transcriptionEngine {
         case .parakeet:
             parakeetEngine
+
+        case .gigaam:
+            gigaamEngine
 
         case .whisperKit:
             whisperKit
@@ -113,6 +122,13 @@ final class EngineController {
             if parakeetEngine.customVocabularyBookmark != nextBookmark { parakeetEngine.customVocabularyBookmark = nextBookmark }
             let nextLang = settings.parakeetLanguageOrNil
             if parakeetEngine.language != nextLang { parakeetEngine.language = nextLang }
+
+        case .gigaam:
+            // Nothing to sync: GigaAM is Russian-only (no language parameter)
+            // and does not consume the shared vocabulary file. Spelled out so a
+            // future settings-backed knob has an obvious home rather than being
+            // swallowed by a `default`.
+            break
         }
     }
 

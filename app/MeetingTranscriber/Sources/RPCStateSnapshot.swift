@@ -280,6 +280,7 @@
             let active: TranscriptionEngineSetting
             let whisperKit: WhisperKit
             let parakeet: Parakeet
+            let gigaam: GigaAM
 
             // `modelState` (stringified `EngineModelState`, e.g. "unloaded"/"loaded")
             // lets driver scripts wait for model preload before measuring —
@@ -297,10 +298,20 @@
                 let modelState: String
             }
 
+            struct GigaAM: Codable {
+                let modelState: String
+                /// The reason the model can't load (missing folder / missing
+                /// files), nil otherwise. GigaAM has no download step, so
+                /// `modelState == "failed"` is the normal first-run state and a
+                /// driver needs the message to say what to install where.
+                let failureMessage: String?
+            }
+
             static let empty = Self(
                 active: .whisperKit,
                 whisperKit: .init(modelVariant: "", language: nil, modelState: ""),
                 parakeet: .init(customVocabularyPath: "", modelState: ""),
+                gigaam: .init(modelState: "", failureMessage: nil),
             )
         }
 
