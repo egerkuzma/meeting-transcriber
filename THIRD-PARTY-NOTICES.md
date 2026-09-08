@@ -3,10 +3,10 @@
 Meeting Transcriber itself is MIT licensed (see `LICENSE`).
 
 **Scope:** this file covers every third-party component redistributed in the
-shipped application, whether statically linked into the app binary or bundled as
-a data resource. The licence text of each ships inside the app at
-`Contents/Resources/licenses/`, and the same files are kept in this repository
-under `licenses/`.
+shipped application, whether statically linked into the app binary, copied in
+as a dynamic framework, or bundled as a data resource. The licence text of each
+ships inside the app at `Contents/Resources/licenses/`, and the same files are
+kept in this repository under `licenses/`.
 
 Not covered, because they are not redistributed: dependencies used only to build
 the app (`swift-syntax`, which runs as a compiler macro plugin) and dependencies
@@ -179,6 +179,63 @@ linked archive, where ggml accounts for most of them.
 - **Copyright:** 2023-2026 The ggml authors
 - **License:** MIT. The full text ships as
   `Contents/Resources/licenses/ggml-LICENSE.txt`.
+
+## whisper.cpp
+
+The `WhisperCppEngine` backend: the prebuilt `whisper.xcframework`, pinned by
+release tag and checksum in `app/MeetingTranscriber/Package.swift`.
+
+Unlike every other binary dependency here this one is a **dynamic** framework,
+and `scripts/lib/whisper-framework.sh` copies it into
+`Contents/Frameworks/whisper.framework`. So the app does not merely link it — it
+ships a complete copy of it, which is what makes the notice below mandatory
+rather than courteous.
+
+- **Project:** <https://github.com/ggml-org/whisper.cpp>, release `b4938`
+- **Copyright:** 2023-2026 The ggml authors
+- **License:** MIT. The full text ships as
+  `Contents/Resources/licenses/WhisperCpp-LICENSE.txt`.
+
+That text is byte-identical to `ggml-LICENSE.txt` — same authors, same grant —
+and is kept as a second file on purpose: the licences directory is read by
+someone auditing what the bundle contains, and a file named for ggml alone does
+not tell them whisper.cpp is covered.
+
+The engine runs ggml-format Whisper models, but **no model is bundled or
+downloaded**: `AppSettings.whisperCppModelPath` points at a file the user
+installs themselves, so a model's own terms bind that user's use and are not
+redistributed by this project.
+
+## sherpa-onnx
+
+The `GigaAMEngine` backend: sherpa-onnx's offline transducer recognizer,
+statically linked into the app binary through the `sherpa-onnx` package product.
+
+- **Project:** <https://github.com/k2-fsa/sherpa-onnx>, version 1.13.7
+- **Copyright:** the upstream `LICENSE` is the unmodified Apache-2.0 text and
+  carries no separate copyright line.
+- **License:** Apache License 2.0. Section 4a requires a copy of the License
+  with every distributed copy, so the full text ships as
+  `Contents/Resources/licenses/sherpa-onnx-LICENSE.txt`. The upstream repository
+  has no `NOTICE` file, so section 4d adds nothing to propagate — checked at the
+  pinned version rather than assumed.
+
+As with whisper.cpp, the GigaAM-v3 model this engine runs is installed by hand
+under `AppPaths.gigaamModelDir` and is neither bundled nor fetched by the app.
+
+### onnxruntime
+
+sherpa-onnx does not carry its own inference engine: it links ONNX Runtime,
+which arrives as a separate binary artifact through the `onnxruntime-libs`
+package and ends up in the same statically linked app binary. It is a distinct
+project under its own grant, and it appears in `Package.resolved` only under
+that intermediary's name, which is what makes it easy to overlook.
+
+- **Project:** <https://github.com/microsoft/onnxruntime>, version 1.28.1,
+  packaged for SwiftPM by <https://github.com/csukuangfj/onnxruntime-libs>
+- **Copyright:** Microsoft Corporation
+- **License:** MIT. The full text ships as
+  `Contents/Resources/licenses/onnxruntime-LICENSE.txt`.
 
 ## How these files get into the bundle
 
