@@ -1,5 +1,5 @@
 {
-  "originHash" : "737035cc3ea1e44ab236a23b84fc49f4d1dd6aad5aa3b2022e127c4499311f9e",
+  "originHash" : "1343fe0d4d9f7901eb18a21f8c665b14d75847f3c87f206a49514e87bbe84aac",
   "pins" : [
     {
       "identity" : "fluidaudio",
@@ -8,6 +8,24 @@
       "state" : {
         "revision" : "4dbf4f9f9a5ff3a53ade848d7ba4e3df13db859b",
         "version" : "0.15.6"
+      }
+    },
+    {
+      "identity" : "onnxruntime-libs",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/csukuangfj/onnxruntime-libs",
+      "state" : {
+        "revision" : "5cc3d2e84d9eade2562cf29a93fa3a520a75ca57",
+        "version" : "1.28.1"
+      }
+    },
+    {
+      "identity" : "sherpa-onnx",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/k2-fsa/sherpa-onnx.git",
+      "state" : {
+        "revision" : "917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e",
+        "version" : "1.13.7"
       }
     },
     {
