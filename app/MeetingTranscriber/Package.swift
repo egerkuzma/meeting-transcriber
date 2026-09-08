@@ -41,6 +41,12 @@ let package = Package(
             url: "https://github.com/pasrom/localvqe-xcframework/releases/download/1.0.3/LocalVQE.xcframework.zip",
             checksum: "15a7503e7d764012ee955ba04cef78a0b24f8d51856fc85b96d9be49d38624ba"
         ),
+        // whisper.cpp prebuilt xcframework (Metal-accelerated) for ggml Whisper fine-tunes.
+        .binaryTarget(
+            name: "WhisperFramework",
+            url: "https://github.com/ggml-org/whisper.cpp/releases/download/b4938/whisper-b4938-xcframework.zip",
+            checksum: "dcc6cdc6d6902d11893434ceda70c23a2a64450f65a1b570035c9908988dfedd"
+        ),
         .executableTarget(
             name: "MeetingTranscriber",
             dependencies: [
@@ -48,6 +54,7 @@ let package = Package(
                 .product(name: "FluidAudio", package: "FluidAudio"),
                 .product(name: "AudioTapLib", package: "audiotap"),
                 .product(name: "sherpa-onnx", package: "sherpa-onnx"),
+                "WhisperFramework",
                 "CLocalVQE",
             ],
             path: "Sources",
