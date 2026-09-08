@@ -87,6 +87,16 @@ let package = Package(
                 // in the vendoring link spike).
                 .linkedLibrary("c++"),
                 .linkedFramework("Accelerate"),
+                // WhisperFramework is the one *dynamic* binary dependency here:
+                // the executable records `@rpath/whisper.framework/...` and dyld
+                // must find it. SwiftPM stages the framework next to the product
+                // in `.build/<config>/`, which the default `@loader_path` rpath
+                // covers — so `swift build`/`test`/`run` need nothing. An
+                // assembled .app does: both bundle assemblers copy only the
+                // executable, so this rpath is what makes the copy that
+                // scripts/lib/whisper-framework.sh puts in Contents/Frameworks
+                // reachable. Neither half works alone.
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
             ]
         ),
         .testTarget(
