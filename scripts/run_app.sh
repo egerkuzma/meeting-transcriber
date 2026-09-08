@@ -167,6 +167,24 @@ fi
 # and any later re-sign of the deployed bundle cannot drift apart (issue #609).
 prepare_signing "$APP_BUNDLE" "$DEV_ENTITLEMENTS" "$DEV_BUNDLE_ID" "$SIGN_HASH"
 if [ -n "$SIGNING_IDENTITY" ]; then
+    # Nested code is signed BEFORE the bundle that contains it, and with the same
+    # identity. The prebuilt whisper.cpp framework arrives unsigned, and codesign
+    # refuses to seal a bundle over unsigned nested code: "code object is not
+    # signed at all -- In subcomponent: Contents/Frameworks/whisper.framework".
+    # Signing it afterwards is not an option either, since modifying nested code
+    # invalidates the enclosing signature.
+    #
+    # No --entitlements: entitlements belong to the executable that requests
+    # them. A library carrying the app's set is at best meaningless and at worst
+    # a rejected submission.
+    #
+    # Re-signed on every build rather than once, because install_whisper_framework
+    # rsyncs the framework in with --delete, which removes the _CodeSignature
+    # directory the previous build's signature left behind.
+    if [ -d "$APP_BUNDLE/Contents/Frameworks/whisper.framework" ]; then
+        codesign --force --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/Frameworks/whisper.framework" \
+            || { echo "codesign failed for whisper.framework (identity $SIGNING_IDENTITY)" >&2; exit 1; }
+    fi
     # Failure is fatal and its stderr is kept. This used to be `2>/dev/null && echo`,
     # which hid both: a bad entitlements path left the bundle completely UNSIGNED
     # with no diagnostic, and every lane that rsyncs it then loses its TCC grants.
