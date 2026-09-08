@@ -17,12 +17,15 @@ enum TranscriptionEngineSetting: String, CaseIterable, Codable {
     case whisperKit
     case parakeet
     case gigaam
+    // swiftlint:disable:next raw_value_for_camel_cased_codable_enum
+    case whisperCpp
 
     var label: String {
         switch self {
         case .whisperKit: "WhisperKit (Whisper)"
         case .parakeet: "Parakeet TDT v3 (NVIDIA)"
         case .gigaam: "GigaAM v3 (Sber, Russian only)"
+        case .whisperCpp: "Whisper.cpp (ggml)"
         }
     }
 
@@ -31,7 +34,7 @@ enum TranscriptionEngineSetting: String, CaseIterable, Codable {
     /// engines with stricter OS floors.
     var isAvailable: Bool {
         switch self {
-        case .whisperKit, .parakeet, .gigaam: true
+        case .whisperKit, .parakeet, .gigaam, .whisperCpp: true
         }
     }
 
@@ -44,13 +47,14 @@ enum TranscriptionEngineSetting: String, CaseIterable, Codable {
     /// live-transcription pipeline can feed it VAD-bounded windows.
     ///
     /// GigaAM decodes a whole utterance per pass and carries no state between
-    /// calls, so it has no streaming-friendly hook — but captions are not lost
-    /// with it selected: it reports Russian, and a set language routes captions
-    /// to the engine-independent Nemotron streaming session.
+    /// calls; Whisper.cpp's own long-form loop assumes a complete file. Neither
+    /// has a streaming-friendly hook — but captions are not lost with either
+    /// selected: both report a set language, and that routes captions to the
+    /// engine-independent Nemotron streaming session.
     var supportsLiveTranscription: Bool {
         switch self {
         case .whisperKit, .parakeet: true
-        case .gigaam: false
+        case .gigaam, .whisperCpp: false
         }
     }
 }
@@ -264,6 +268,24 @@ final class AppSettings {
     /// Whisper transcription language. Empty string = auto-detect (maps to nil on WhisperKitEngine).
     var whisperLanguage: String {
         didSet { defaults.set(whisperLanguage, forKey: "whisperLanguage") }
+    }
+
+    /// Path to the ggml `.bin` that `WhisperCppEngine` runs. A setting rather
+    /// than a constant because the engine exists to run fine-tunes: which model
+    /// is installed is the user's choice, and so the language below must be too.
+    var whisperCppModelPath: String {
+        didSet { defaults.set(whisperCppModelPath, forKey: "whisperCppModelPath") }
+    }
+
+    /// Whisper.cpp language (ISO 639-1 code). Empty string = auto-detect.
+    /// Defaults to Russian, matching the fine-tune the engine was added for.
+    var whisperCppLanguage: String {
+        didSet { defaults.set(whisperCppLanguage, forKey: "whisperCppLanguage") }
+    }
+
+    /// Language as Optional for Whisper.cpp. Empty string → nil (auto-detect).
+    var whisperCppLanguageOrNil: String? {
+        whisperCppLanguage.isEmpty ? nil : whisperCppLanguage
     }
 
     /// Parakeet language hint (ISO 639-1 code). Empty string = auto-detect.
@@ -561,6 +583,9 @@ final class AppSettings {
             ?? "openai_whisper-large-v3-v20240930_turbo"
         whisperLanguage = defaults.object(forKey: "whisperLanguage") as? String ?? "de"
         parakeetLanguage = defaults.object(forKey: "parakeetLanguage") as? String ?? ""
+        whisperCppModelPath = defaults.object(forKey: "whisperCppModelPath") as? String
+            ?? WhisperCppModelFile.defaultPath
+        whisperCppLanguage = defaults.object(forKey: "whisperCppLanguage") as? String ?? "ru"
         customVocabularyPath = defaults.string(forKey: "customVocabularyPath") ?? ""
         customVocabularyBookmark = defaults.data(forKey: "customVocabularyBookmark")
         whisperKitVocabularyPromptEnabled = defaults.object(forKey: "whisperKitVocabularyPromptEnabled") as? Bool ?? false

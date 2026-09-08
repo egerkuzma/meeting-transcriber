@@ -48,6 +48,7 @@ final class SettingsInteractionTests: XCTestCase {
             whisperKitEngine: WhisperKitEngine(),
             parakeetEngine: ParakeetEngine(),
             gigaamEngine: GigaAMEngine(),
+            whisperCppEngine: WhisperCppEngine(),
         )
 
         let picker = try view.inspect().find(ViewType.Picker.self) { picker in
@@ -139,6 +140,7 @@ final class SettingsInteractionTests: XCTestCase {
             whisperKitEngine: WhisperKitEngine(),
             parakeetEngine: ParakeetEngine(),
             gigaamEngine: GigaAMEngine(),
+            whisperCppEngine: WhisperCppEngine(),
         )
         let toggle = try view.inspect()
             .find(viewWithAccessibilityIdentifier: A11yID.liveCaptionsOverlayToggle)
@@ -158,6 +160,7 @@ final class SettingsInteractionTests: XCTestCase {
             whisperKitEngine: WhisperKitEngine(),
             parakeetEngine: ParakeetEngine(),
             gigaamEngine: GigaAMEngine(),
+            whisperCppEngine: WhisperCppEngine(),
         )
         let toggle = try view.inspect()
             .find(viewWithAccessibilityIdentifier: A11yID.liveCaptionsOverlayToggle)

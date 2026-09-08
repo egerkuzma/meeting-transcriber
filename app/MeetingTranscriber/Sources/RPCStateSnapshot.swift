@@ -281,6 +281,7 @@
             let whisperKit: WhisperKit
             let parakeet: Parakeet
             let gigaam: GigaAM
+            let whisperCpp: WhisperCpp
 
             // `modelState` (stringified `EngineModelState`, e.g. "unloaded"/"loaded")
             // lets driver scripts wait for model preload before measuring —
@@ -298,6 +299,18 @@
                 let modelState: String
             }
 
+            struct WhisperCpp: Codable {
+                let modelPath: String
+                /// `nil` = auto-detect.
+                let language: String?
+                let modelState: String
+                /// Why the model can't load (missing / not a file), nil
+                /// otherwise. Same reason as GigaAM's: there is no download
+                /// step, so `modelState == "failed"` is the normal state before
+                /// the user points the setting at a ggml file.
+                let failureMessage: String?
+            }
+
             struct GigaAM: Codable {
                 let modelState: String
                 /// The reason the model can't load (missing folder / missing
@@ -312,6 +325,7 @@
                 whisperKit: .init(modelVariant: "", language: nil, modelState: ""),
                 parakeet: .init(customVocabularyPath: "", modelState: ""),
                 gigaam: .init(modelState: "", failureMessage: nil),
+                whisperCpp: .init(modelPath: "", language: nil, modelState: "", failureMessage: nil),
             )
         }
 
@@ -364,17 +378,21 @@
             }
 
             struct Transcription: Codable {
-                /// `TranscriptionEngineSetting` raw value ("whisperKit" | "parakeet").
+                /// `TranscriptionEngineSetting` raw value
+                /// ("whisperKit" | "parakeet" | "gigaam" | "whisperCpp").
                 let engine: String
                 let whisperKitModel: String
                 /// Empty string = auto-detect (mirrors the UserDefaults sentinel).
                 let whisperLanguage: String
                 let parakeetLanguage: String
+                let whisperCppModelPath: String
+                let whisperCppLanguage: String
                 let customVocabularyPath: String
 
                 static let empty = Self(
                     engine: "", whisperKitModel: "", whisperLanguage: "",
-                    parakeetLanguage: "", customVocabularyPath: "",
+                    parakeetLanguage: "", whisperCppModelPath: "", whisperCppLanguage: "",
+                    customVocabularyPath: "",
                 )
             }
 

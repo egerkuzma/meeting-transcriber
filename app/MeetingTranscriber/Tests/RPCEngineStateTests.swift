@@ -82,6 +82,8 @@
             XCTAssertEqual(snapshot.engines.parakeet.modelState, "unloaded")
             XCTAssertEqual(snapshot.engines.gigaam.modelState, "unloaded")
             XCTAssertNil(snapshot.engines.gigaam.failureMessage)
+            XCTAssertEqual(snapshot.engines.whisperCpp.modelState, "unloaded")
+            XCTAssertNil(snapshot.engines.whisperCpp.failureMessage)
         }
 
         func test_snapshot_reflectsActiveEngine_gigaam() {
@@ -89,6 +91,21 @@
             let state = AppState(settings: settings)
 
             XCTAssertEqual(state.rpcStateSnapshot().engines.active, .gigaam)
+        }
+
+        func test_snapshot_reflectsActiveEngine_whisperCpp() {
+            settings.transcriptionEngine = .whisperCpp
+            settings.whisperCppModelPath = "/tmp/ggml-test.bin"
+            settings.whisperCppLanguage = "ru"
+            let state = AppState(settings: settings)
+
+            let snapshot = state.rpcStateSnapshot()
+
+            XCTAssertEqual(snapshot.engines.active, .whisperCpp)
+            // Read back off the engine, not the setting: this is the assertion
+            // that the settings -> engine sync actually ran.
+            XCTAssertEqual(snapshot.engines.whisperCpp.modelPath, "/tmp/ggml-test.bin")
+            XCTAssertEqual(snapshot.engines.whisperCpp.language, "ru")
         }
 
         func test_modelStateWireFormat_pinsDescriptionContract() {
