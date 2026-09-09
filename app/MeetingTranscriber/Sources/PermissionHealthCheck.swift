@@ -436,9 +436,9 @@ enum PermissionHealthCheck {
         /// The AX API is disabled for us (`kAXErrorAPIDisabled`). The only
         /// outcome that is evidence our own grant is not working.
         case apiDisabled
-        /// The call failed for a reason that is about the element being asked,
-        /// not about our permission — most often the frontmost app being slow
-        /// or not answering AX at all. Carries the raw code for the log.
+        /// The call failed for a reason that has not been shown to be about our
+        /// permission. Carries the raw code for the log, so the next occurrence
+        /// can be attributed instead of guessed.
         case inconclusive(AXError)
 
         /// Compact, PII-free token for the diagnostic log. The raw `AXError`
@@ -461,18 +461,15 @@ enum PermissionHealthCheck {
     ///
     /// **An inconclusive probe reports `.healthy`, not `.broken`.** This used to
     /// be a `Bool` where every non-success collapsed to "broken", and the
-    /// measured consequence was a false alarm telling users to toggle a
+    /// reported consequence was a false alarm telling users to toggle a
     /// permission that was fine: one process, no user action, and the verdict
-    /// flipping healthy -> broken -> healthy inside 70 seconds (17:37 healthy,
-    /// 17:39 broken + notification, 17:40 healthy again). A revoked grant does
-    /// not repair itself in a minute; an unresponsive frontmost app does.
+    /// flipping healthy -> broken -> healthy inside 70 seconds. A revoked grant
+    /// does not repair itself in a minute.
     ///
-    /// `.broken` exists for exactly one situation — TCC says yes while the API
-    /// says no — and `AXIsProcessTrusted()` is already the system's own answer
-    /// about our grant. So the probe only has to catch the contradiction, which
-    /// is `.apiDisabled`. Every other AX error describes the element that was
-    /// asked. Reporting those as broken makes the check measure how responsive
-    /// some other application is and announce the answer as if it were about us.
+    /// `.broken` exists for exactly one situation, TCC saying yes while the API
+    /// says no, and `AXIsProcessTrusted()` is already the system's own answer
+    /// about our grant. So the probe only has to catch that contradiction, which
+    /// is `.apiDisabled`.
     static func checkAccessibility(
         trusted: Bool,
         probe: AccessibilityProbe,
@@ -484,11 +481,28 @@ enum PermissionHealthCheck {
         }
     }
 
+    /// What one `AXError` says about *our* Accessibility access. Kept apart from
+    /// the call that produces it because this mapping is the decision the fix
+    /// turns on, and welding it to an I/O call would leave it untestable.
+    ///
+    /// `.notImplemented` takes the default branch deliberately: Apple documents
+    /// it as "can be returned if a PROCESS does not support the accessibility
+    /// API" — the process being asked, not us.
+    static func classify(_ err: AXError) -> AccessibilityProbe {
+        switch err {
+        // .noValue: nothing focused right now, but the API answered.
+        case .success, .noValue: .responded
+        case .apiDisabled: .apiDisabled
+        default: .inconclusive(err)
+        }
+    }
+
     /// Probes the Accessibility API with a lightweight system-wide call.
     ///
     /// `kAXFocusedApplicationAttribute` on the system-wide element is a question
     /// put to whichever app currently has focus, so its failure modes belong to
     /// that app as much as to us — which is what `AccessibilityProbe` separates.
+    /// Everything except the call itself lives in `classify`.
     static func probeAccessibility() -> AccessibilityProbe {
         let systemWide = AXUIElementCreateSystemWide()
         var value: CFTypeRef?
@@ -497,21 +511,7 @@ enum PermissionHealthCheck {
             kAXFocusedApplicationAttribute as CFString,
             &value,
         )
-        switch err {
-        // .success: got the focused app. .noValue: nothing focused right now,
-        // but the API answered, which is what we asked.
-        case .success, .noValue: return .responded
-
-        // ONLY `.apiDisabled`. Apple documents it as "the accessibility API is
-        // disabled", which is about our access. `.notImplemented` reads like a
-        // sibling and is not one: its own documentation says it "can be returned
-        // if a PROCESS does not support the accessibility API" — the process
-        // being asked. Putting it here would re-create the false alarm for every
-        // frontmost app with incomplete AX support.
-        case .apiDisabled: return .apiDisabled
-
-        default: return .inconclusive(err)
-        }
+        return classify(err)
     }
 
     static func checkAccessibilityLive() -> PermissionStatus {
