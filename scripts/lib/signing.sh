@@ -132,30 +132,6 @@ prepare_signing() {
 # is why prepare_signing only requests it when a profile is present.)
 verify_signing() {
     local bundle="$1"
-
-    # Nested code first, and BEFORE the profile check below returns early. That
-    # early return fires whenever no profile is embedded, which is the ordinary
-    # dev build — so anything placed after it is not a check at all, and that is
-    # how a bundle whose nested framework was unsigned reached the point where
-    # codesign refused to seal it with nothing having verified anything.
-    #
-    # --deep --strict, and fatal: a bundle that fails this does not launch, so
-    # reporting it as a warning would only move the failure later, to whoever
-    # runs the app or the lane that deploys it.
-    #
-    # Skipped when the bundle carries no signature at all: on a machine with no
-    # codesigning identity the caller deliberately leaves it unsigned and has
-    # already said so, and "not signed at all" is that decision, not a defect.
-    if codesign -dv "$bundle" >/dev/null 2>&1; then
-        local nested_verification
-        if ! nested_verification="$(codesign --verify --deep --strict "$bundle" 2>&1)"; then
-            echo "  ERROR: the signed bundle does not verify:" >&2
-            printf '%s\n' "$nested_verification" | sed 's/^/    /' >&2
-            return 1
-        fi
-        echo "  Verified the signature, including nested code"
-    fi
-
     [ -f "$bundle/Contents/embedded.provisionprofile" ] || return 0
 
     if bundle_has_time_sensitive "$bundle"; then
@@ -168,6 +144,27 @@ verify_signing() {
     echo "  capability on this App ID and re-issue the profile. Until then the"
     echo "  consent prompt cannot break through Focus (issue #543)."
     return 0
+}
+
+# verify_nested_code <app-bundle>
+#
+# `codesign --verify --deep --strict`, fatal. Separate from `verify_signing`
+# on purpose: that one is also called by `resign_deployed_bundle`, whose
+# contract is "replace a signature that does not verify" — folding a
+# post-condition into it made a stale-signature re-sign report failure after
+# doing exactly what it was asked to do (caught by test_signing_resign.sh).
+#
+# Skipped when the bundle carries no signature at all: on a machine with no
+# codesigning identity the caller deliberately leaves it unsigned and says so.
+verify_nested_code() {
+    local bundle="$1" output
+    codesign -dv "$bundle" >/dev/null 2>&1 || return 0
+    if ! output="$(codesign --verify --deep --strict "$bundle" 2>&1)"; then
+        echo "  ERROR: the signed bundle does not verify:" >&2
+        printf '%s\n' "$output" | sed 's/^/    /' >&2
+        return 1
+    fi
+    echo "  Verified the signature, including nested code"
 }
 
 # bundle_has_time_sensitive <app-bundle>
