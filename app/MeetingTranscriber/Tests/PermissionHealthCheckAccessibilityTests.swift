@@ -44,7 +44,7 @@ final class PermissionHealthCheckAccessibilityTests: XCTestCase {
     /// Every non-`apiDisabled` error takes the inconclusive path, so the fix
     /// does not depend on guessing which code a busy app happens to return.
     func testAccessibilityOtherAXErrorsAreAlsoInconclusive() {
-        for error in [AXError.failure, .invalidUIElement, .noValue, .attributeUnsupported] {
+        for error in [AXError.failure, .invalidUIElement, .illegalArgument, .attributeUnsupported] {
             XCTAssertEqual(
                 PermissionHealthCheck.checkAccessibility(trusted: true, probe: .inconclusive(error)),
                 .healthy,
@@ -53,20 +53,63 @@ final class PermissionHealthCheckAccessibilityTests: XCTestCase {
         }
     }
 
+    // MARK: - AXError classification
+
     /// `.notImplemented` sits next to `.apiDisabled` in the AX header and means
     /// something entirely different: the *asked* process has incomplete AX
     /// support. Classifying it as a permission failure would re-create the false
-    /// alarm for every such app, so the probe must keep them apart.
-    func testAccessibilityProbeTreatsNotImplementedAsInconclusive() {
+    /// alarm for every such app, so the classifier must keep them apart. This
+    /// asserts the mapping itself, not its consequence two calls downstream.
+    func testClassifyMapsOnlyApiDisabledToTheBrokenSignal() {
+        XCTAssertEqual(PermissionHealthCheck.classify(.apiDisabled), .apiDisabled)
+    }
+
+    func testClassifyKeepsNotImplementedOutOfTheBrokenSignal() {
         XCTAssertEqual(
-            PermissionHealthCheck.checkAccessibility(trusted: true, probe: .inconclusive(.notImplemented)),
-            .healthy,
+            PermissionHealthCheck.classify(.notImplemented),
+            .inconclusive(.notImplemented),
+            "notImplemented describes the process being asked, not our grant",
         )
+    }
+
+    func testClassifyTreatsAnsweredCallsAsResponded() {
+        // `.noValue` is not a failure: nothing has focus right now, but the API
+        // answered, which is the only thing the probe asked.
+        XCTAssertEqual(PermissionHealthCheck.classify(.success), .responded)
+        XCTAssertEqual(PermissionHealthCheck.classify(.noValue), .responded)
+    }
+
+    func testClassifyTreatsCannotCompleteAsInconclusive() {
         XCTAssertEqual(
-            PermissionHealthCheck.checkAccessibility(trusted: true, probe: .apiDisabled),
-            .broken,
-            "The one error that IS about our access still reports broken",
+            PermissionHealthCheck.classify(.cannotComplete),
+            .inconclusive(.cannotComplete),
         )
+    }
+
+    /// Every remaining error describes the element that was asked. Enumerated
+    /// rather than sampled, so a future regrouping of any one of them has to
+    /// come here and say so.
+    func testClassifyTreatsEveryOtherErrorAsInconclusive() {
+        let others: [AXError] = [
+            .failure, .illegalArgument, .invalidUIElement, .invalidUIElementObserver,
+            .cannotComplete, .attributeUnsupported, .actionUnsupported,
+            .notificationUnsupported, .notImplemented, .notificationAlreadyRegistered,
+            .notificationNotRegistered, .parameterizedAttributeUnsupported,
+            .notEnoughPrecision,
+        ]
+        for error in others {
+            XCTAssertEqual(
+                PermissionHealthCheck.classify(error), .inconclusive(error),
+                "AXError \(error.rawValue) is about the element asked, not our permission",
+            )
+        }
+    }
+
+    /// The end-to-end shape of the fix: a classified error carried through to a
+    /// permission verdict.
+    func testInconclusiveClassificationReachesAHealthyVerdict() {
+        let probe = PermissionHealthCheck.classify(.cannotComplete)
+        XCTAssertEqual(PermissionHealthCheck.checkAccessibility(trusted: true, probe: probe), .healthy)
     }
 
     /// The verdict alone could not explain the false alarm; the raw code can.
@@ -76,5 +119,6 @@ final class PermissionHealthCheckAccessibilityTests: XCTestCase {
             "inconclusive(AXError \(AXError.cannotComplete.rawValue))",
         )
         XCTAssertEqual(PermissionHealthCheck.AccessibilityProbe.responded.logToken, "responded")
+        XCTAssertEqual(PermissionHealthCheck.AccessibilityProbe.apiDisabled.logToken, "apiDisabled")
     }
 }
