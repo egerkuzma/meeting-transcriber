@@ -193,6 +193,7 @@ if [ -n "$SIGNING_IDENTITY" ]; then
     echo "  Signed with: $SIGNING_IDENTITY (+ entitlements)"
 fi
 verify_signing "$APP_BUNDLE"
+verify_nested_code "$APP_BUNDLE"
 
 if [ "$BUILD_ONLY" = true ]; then
     echo "Bundle ready: $APP_BUNDLE"
